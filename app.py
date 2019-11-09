@@ -22,7 +22,8 @@ streetlight_df['distance_centre'] = np.sqrt(
     (streetlight_df['lng'] - 49.280918) ** 2 + (-123.120401 - streetlight_df['lat']) ** 2)
 
 streetlight_df['distance_centre_norm'] = ((streetlight_df['distance_centre'] - min(
-    streetlight_df['distance_centre'])) / (max(streetlight_df['distance_centre']) - min(streetlight_df['distance_centre'])))
+    streetlight_df['distance_centre'])) / (max(streetlight_df['distance_centre']) - min(
+    streetlight_df['distance_centre'])))
 
 external_stylesheets = [dbc.themes.FLATLY]
 
@@ -76,15 +77,26 @@ navbar = dbc.Navbar(
 
 body = html.Div(
     html.Div([
+
         html.Div(id='live-update-text'),
+
+        dcc.Slider(
+            id='time-slider',
+            min=1,
+            max=24,
+            step=1,
+            value=datetime.datetime.now().hour,
+        ),
 
         html.Div(
             children=[
                 dcc.Graph(id="map-graph",
                           style={'height': '80vh'}),
             ],
-            style={'height': '80vh'}
+            style={'height': '70vh'}
         ),
+
+        html.Pre(id='click-data'),
 
         dcc.Interval(
             id='interval-component',
@@ -94,7 +106,7 @@ body = html.Div(
 
         dcc.Interval(
             id='interval-map',
-            interval=30 * 1000,  # in milliseconds
+            interval=1 * 60 * 60 * 1000,  # in milliseconds
             n_intervals=0
         )
 
@@ -115,26 +127,29 @@ def update_metrics(n):
     dt = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     date = dt.split(' ')[0]
     time = dt.split(' ')[1]
-    style = {'padding': '5px', 'fontSize': '16px'}
+
     return [
-        html.Span(f"Date: {date}, Time: {time}", style=style),
+        html.H4(f"Date: {date}, Time: {time}"),
     ]
 
 
 @app.callback(Output('map-graph', 'figure'),
-              [Input('interval-map', 'n_intervals')])
-def update_map(n):
-
+              [Input('interval-map', 'n_intervals'),
+               Input('time-slider', 'value')])
+def update_map(n, time_value):
     now = datetime.datetime.now()
 
-    streetlight_df['time_norm'] = 24/24
-    streetlight_df['cos_time'] = streetlight_df['time_norm'].apply(lambda x: (math.cos(x * 2 * math.pi) * -0.5) + 1)
+    streetlight_df['time_norm'] = time_value / 24
+    streetlight_df['cos_time'] = streetlight_df['time_norm'].apply(lambda x: (math.cos(x * 2 * math.pi) * -2))
     streetlight_df['time_intensity'] = streetlight_df['distance_centre_norm'] * streetlight_df['cos_time']
+    streetlight_df['time_intensity_norm'] = (streetlight_df['time_intensity'] - min(
+        streetlight_df['time_intensity'])) / (max(streetlight_df['time_intensity']) - min(
+        streetlight_df['time_intensity']))
 
     fig = go.Figure(go.Densitymapbox(lat=streetlight_df['lat'],
                                      lon=streetlight_df['lng'],
-                                     z=streetlight_df['time_intensity'],
-                                     radius=2))
+                                     z=streetlight_df['time_intensity_norm'],
+                                     radius=1))
 
     fig.update_layout(mapbox_style="stamen-terrain",
                       mapbox_center_lon=streetlight_df['lng'][0],
@@ -145,6 +160,13 @@ def update_map(n):
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
 
     return fig
+
+
+@app.callback(Output('click-data', 'children'),
+              [Input('map-graph', 'clickData')])
+def map_output(clickData):
+    if clickData:
+        return json.dumps(clickData, indent=4)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,7 @@
+pyshark
+pyorbital
+dash
+plotly
+dash-bootstrap-components
+pandas
+numpy

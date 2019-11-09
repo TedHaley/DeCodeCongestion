@@ -2,21 +2,25 @@ import pyshark
 import logging
 import time
 from device import Device
+from arduino import Arduino
+
+lamp = Arduino()
 logger = logging.getLogger()
 
-MAX_DIST = 40
-TIME_OUT = 20
+MAX_DIST = 2
+TIME_OUT = 40
 
 # set up wire shark
 capture = pyshark.LiveCapture(interface='en0',
                               monitor_mode=True,
                               bpf_filter='wlan type mgt subtype probe-req')
 # capture.set_debug()
-
 devices_within_range = dict()
-while True:
-    capture.sniff(packet_count=10)
-    for packet in capture.sniff_continuously(packet_count=20):
+
+
+def monitor_wifi(capture: pyshark.LiveCapture, dictionary):
+    capture.sniff(packet_count=1)
+    for packet in capture.sniff_continuously():
         address = packet.layers[2].ta_resolved
         signal_strength = int(packet.radiotap.dbm_antsignal)
         frequency = int(packet.radiotap.channel_freq)
@@ -34,6 +38,7 @@ while True:
                 devices_within_range[address] = device
                 print(f'NEW DEVICE WITHIN RANGE: Address:       {address}')
                 print(f'            DISTANCE: {device.distance[-1]}')
+                print(f'            DISTANCES: {device.distance}')
 
         keys_to_del = []
         for k, v in devices_within_range.items():
@@ -44,9 +49,14 @@ while True:
 
         for k in keys_to_del:
             del devices_within_range[k]
-    print(f'TOTAL NUMBER OF DEVICES WITHIN RANGE:   {len(devices_within_range.keys())}')
 
+        print(f'TOTAL NUMBER OF DEVICES WITHIN RANGE:   {len(devices_within_range.keys())}')
         # print(f'Signal strength:        {signal_strength} dB\n'
         #       f'Signal Frequency:       {frequency} Mhz\n'
         #       f'Sender Address:         {address}\n'
         #       f'Estimated Distance:     {distance} m')
+
+
+if __name__ == '__main__':
+    while True:
+        monitor_wifi(capture, devices_within_range)

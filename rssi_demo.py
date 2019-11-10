@@ -59,4 +59,4 @@ while True:
 
         buffer.append(distance)
 
-    adjust_light(devices=None, min=0.2, max=1, arduino=lamp, val=np.average(buffer))
+    adjust_light(devices=None, min=0.2, max=3, arduino=lamp, val=np.average(buffer))

@@ -5,3 +5,4 @@ plotly
 dash-bootstrap-components
 pandas
 numpy
+plotly-express

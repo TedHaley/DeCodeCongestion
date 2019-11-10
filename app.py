@@ -9,6 +9,7 @@ import dash_html_components as html
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
+from pprint import pprint
 
 streetlight_df = pd.read_csv('/Users/teddyhaley/PycharmProjects/DeCodeCongestion/data/street-lighting-poles.csv',
                              sep=';')
@@ -17,11 +18,10 @@ streetlight_df['lng'] = streetlight_df['Geom'].apply(lambda x: (json.loads(x)['c
 streetlight_df['lat'] = streetlight_df['Geom'].apply(lambda x: (json.loads(x)['coordinates'])[1])
 streetlight_df['node_number'] = np.arange(len(streetlight_df))
 
-# 49.280918, -123.120401
 streetlight_df['distance_centre'] = np.sqrt(
-    (streetlight_df['lng'] - 49.280918) ** 2 + (-123.120401 - streetlight_df['lat']) ** 2)
+    (streetlight_df['lat'] - 49.28171181258935) ** 2 + (-123.12331861143021 - streetlight_df['lng']) ** 2)
 
-streetlight_df['distance_centre_norm'] = ((streetlight_df['distance_centre'] - min(
+streetlight_df['distance_centre_norm'] = 1 - ((streetlight_df['distance_centre'] - min(
     streetlight_df['distance_centre'])) / (max(streetlight_df['distance_centre']) - min(
     streetlight_df['distance_centre'])))
 
@@ -91,12 +91,14 @@ body = html.Div(
         html.Div(
             children=[
                 dcc.Graph(id="map-graph",
-                          style={'height': '80vh'}),
+                          style={'height': '70vh'}
+                          ),
             ],
-            style={'height': '70vh'}
+            style={'height': '70vh',
+                   'marginBottom': '1em'}
         ),
 
-        html.Pre(id='click-data'),
+        html.Div(id='data_table'),
 
         dcc.Interval(
             id='interval-component',
@@ -162,11 +164,27 @@ def update_map(n, time_value):
     return fig
 
 
-@app.callback(Output('click-data', 'children'),
-              [Input('map-graph', 'clickData')])
-def map_output(clickData):
-    if clickData:
-        return json.dumps(clickData, indent=4)
+@app.callback(
+    Output('data_table', 'children'),
+    [Input('map-graph', 'clickData')])
+def em_optimizer_parameters(clickData):
+    if clickData is not None:
+        df = streetlight_df[streetlight_df['node_number'] == clickData['points'][0]['pointNumber']]
+
+        print(df.columns)
+
+        new_df = pd.DataFrame()
+        new_df["Node"] = df['node_number']
+        new_df['Neighbourhood'] = df['Geo Local Area']
+        new_df['Latitude'] = df['lat']
+        new_df['Longitude'] = df['lng']
+        new_df['Distance Center'] = df['distance_centre_norm']
+        # new_df['Devices in Network'] = df['time_intensity_norm'] + 5
+
+        return dbc.Table.from_dataframe(new_df, striped=True, bordered=True, hover=True)
+
+
+# table = dbc.Table.from_dataframe(df, striped=True, bordered=True, hover=True)
 
 
 if __name__ == '__main__':

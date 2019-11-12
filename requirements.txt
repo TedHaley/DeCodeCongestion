@@ -6,3 +6,4 @@ dash-bootstrap-components
 pandas
 numpy
 plotly-express
+gunicorn

@@ -13,7 +13,7 @@ from pprint import pprint
 import plotly.express as px
 import random
 
-streetlight_df = pd.read_csv('/Users/teddyhaley/PycharmProjects/DeCodeCongestion/data/street-lighting-poles.csv',
+streetlight_df = pd.read_csv(r'data/street-lighting-poles.csv',
                              sep=';')
 streetlight_df['coordinates'] = streetlight_df['Geom'].apply(lambda x: json.loads(x)['coordinates'])
 streetlight_df['lng'] = streetlight_df['Geom'].apply(lambda x: (json.loads(x)['coordinates'])[0])
@@ -42,7 +42,7 @@ logo = html.A(
     # Use row and col to control vertical alignment of logo / brand
     children=[
         html.Img(
-            src=app.get_asset_url('text_logo.png'),
+            src=app.get_asset_url(r'assets/text_logo.png'),
             height="60px",
             style={'marginRight': '1em'})
     ],
